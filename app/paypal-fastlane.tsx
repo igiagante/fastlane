@@ -7,6 +7,7 @@ import { OrderDetails } from "./types/paypal";
 import PayPalButtonsWrapper from "./components/paypal-buttons-wrapper";
 import ErrorMessage from "./components/error-message";
 import { PaymentError, PAYMENT_ERROR_CODES } from "./utils/errors";
+import ErrorBoundary from "./components/error-boundary";
 
 const PayPalFastlane = () => {
   const [email, setEmail] = useState("");
@@ -14,9 +15,6 @@ const PayPalFastlane = () => {
   const [tokenError, setTokenError] = useState<PaymentError | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
-
-  console.log("clientToken", clientToken);
-  console.log("tokenError", tokenError);
 
   useEffect(() => {
     const getToken = async () => {
@@ -77,50 +75,65 @@ const PayPalFastlane = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 border rounded-lg shadow-sm">
-      <h2 className="text-xl font-semibold mb-4">Complete Your Purchase</h2>
+    <ErrorBoundary>
+      <div className="max-w-md mx-auto p-4 border rounded-lg shadow-sm">
+        <h2 className="text-xl font-semibold mb-4">Complete Your Purchase</h2>
 
-      <div className="mb-4">
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          Email Address
-        </label>
-        <input
-          type="email"
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-3 py-2 border rounded-md"
-          placeholder="Enter your email"
-        />
+        <div className="mb-4">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Email Address
+          </label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md"
+            placeholder="Enter your email"
+          />
+        </div>
+
+        {clientToken && (
+          <ErrorBoundary
+            fallback={
+              <ErrorMessage
+                title="Payment Error"
+                message="Failed to process payment. Please try again."
+                onRetry={() => window.location.reload()}
+              />
+            }
+          >
+            <PayPalScriptProvider
+              options={{
+                clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+                currency: "USD",
+                intent: "capture",
+                dataClientToken: clientToken,
+                dataUserExperienceFlow: "NATIVE_CHECKOUT",
+                dataPageType: "checkout",
+                dataPartnerAttributionId: "FASTLANE",
+                enableFunding: "card,credit,paylater,venmo",
+                disableFunding:
+                  "sepa,bancontact,eps,giropay,ideal,mybank,p24,sofort",
+                dataEmail: email,
+                components: "buttons,funding-eligibility",
+                commit: true,
+                vault: false,
+              }}
+            >
+              <PayPalButtonsWrapper
+                email={email}
+                setOrderDetails={setOrderDetails}
+                setPaymentSuccess={setPaymentSuccess}
+              />
+            </PayPalScriptProvider>
+          </ErrorBoundary>
+        )}
       </div>
-
-      <PayPalScriptProvider
-        options={{
-          clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
-          currency: "USD",
-          intent: "capture",
-          dataClientToken: clientToken,
-          dataUserExperienceFlow: "NATIVE_CHECKOUT",
-          dataPageType: "checkout",
-          dataPartnerAttributionId: "FASTLANE",
-          enableFunding: "card,credit,paylater,venmo",
-          disableFunding: "sepa,bancontact,eps,giropay,ideal,mybank,p24,sofort",
-          dataEmail: email,
-          components: "buttons,funding-eligibility",
-          commit: true,
-          vault: false,
-        }}
-      >
-        <PayPalButtonsWrapper
-          email={email}
-          setOrderDetails={setOrderDetails}
-          setPaymentSuccess={setPaymentSuccess}
-        />
-      </PayPalScriptProvider>
-    </div>
+    </ErrorBoundary>
   );
 };
 

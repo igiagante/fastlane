@@ -13,11 +13,19 @@ const PayPalButtonsWrapper = ({
   setOrderDetails,
   setPaymentSuccess,
 }: PayPalButtonsWrapperProps) => {
-  const [{ isPending }] = usePayPalScriptReducer();
+  const [{ isPending, isRejected }] = usePayPalScriptReducer();
 
   const isValidEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
   };
+
+  if (isRejected) {
+    return (
+      <div data-testid="error-message" className="text-red-500">
+        Failed to load PayPal. Please refresh and try again.
+      </div>
+    );
+  }
 
   return isPending ? (
     <PaypalButtonsSkeleton />
