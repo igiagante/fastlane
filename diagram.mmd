@@ -1,0 +1,32 @@
+flowchart TD
+    %% Frontend Section
+    subgraph FE [Next.js]
+        A[Checkout Page]
+        B[PayPalFastlane Component]
+        C[User Enters Email & Clicks PayPal Button]
+    end
+
+    %% API Server Section
+    subgraph API [API Server]
+        D[/api/get-paypal-token/]
+        E[/api/create-paypal-order/]
+    end
+
+    %% PayPal Gateway Section
+    subgraph PP [PayPal Gateway]
+        F[Order Creation API]
+        G[Order Capture API]
+    end
+
+    %% Flow Connections
+    A --> B
+    B -->|Fetch Token| D
+    D -- Token Response --> B
+    B --> C
+    C -->|Create Order| E
+    E -- Order Request --> F
+    F -- Order ID --> E
+    E -- Order ID --> B
+    B -->|User Approves Payment| G
+    G -- Capture Confirmation --> B
+    B --> H[Confirmation / Success Page]

@@ -66,3 +66,7 @@ Before beginning, ensure you have:
   - Create two custom API routes in your Next.js project:
     - `/api/get-paypal-token` for generating a client token.
     - `/api/create-paypal-order` for creating and capturing an order.
+
+## Fastlane Checkout Flow Diagram
+
+![Fastlane Checkout Flow Diagram](./diagram.svg)
