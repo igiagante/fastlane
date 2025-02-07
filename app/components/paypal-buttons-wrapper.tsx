@@ -13,7 +13,6 @@ type PayPalButtonsWrapperProps = {
   setOrderDetails: (details: OrderDetails) => void;
   setPaymentSuccess: (success: boolean) => void;
   paymentSuccess: boolean;
-  onClose?: () => void;
 };
 
 const PayPalButtonsWrapper = ({
@@ -21,7 +20,6 @@ const PayPalButtonsWrapper = ({
   setOrderDetails,
   setPaymentSuccess,
   paymentSuccess,
-  onClose,
 }: PayPalButtonsWrapperProps) => {
   const [{ isPending, isRejected }, dispatch] = usePayPalScriptReducer();
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +93,6 @@ const PayPalButtonsWrapper = ({
           const details = await actions.order.capture();
           setOrderDetails(details as unknown as OrderDetails);
           setPaymentSuccess(true);
-          onClose?.();
         } catch (error) {
           console.error("Capture error:", error);
           // Check if we already have the order details despite the error
@@ -108,7 +105,6 @@ const PayPalButtonsWrapper = ({
           ) {
             // Payment likely succeeded if we have an orderID
             setPaymentSuccess(true);
-            onClose?.();
           } else {
             setError("Failed to process payment");
           }

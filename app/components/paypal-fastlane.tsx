@@ -73,6 +73,7 @@ const PayPalFastlane = ({ onClose }: PayPalFastlaneProps) => {
           setPaymentSuccess(false);
           setOrderDetails(null);
           setEmail("");
+          onClose?.();
         }}
       />
     );
@@ -132,7 +133,6 @@ const PayPalFastlane = ({ onClose }: PayPalFastlaneProps) => {
             setOrderDetails={setOrderDetails}
             setPaymentSuccess={setPaymentSuccess}
             paymentSuccess={paymentSuccess}
-            onClose={onClose}
           />
         </PayPalScriptProvider>
       </ErrorBoundary>
