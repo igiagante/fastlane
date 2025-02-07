@@ -33,7 +33,7 @@ Before beginning, ensure you have:
   A Next.js project with Node.js installed. Install the PayPal React SDK:
 
   ```bash
-  npm install @paypal/react-paypal-js
+  pnpm add @paypal/react-paypal-js
   ```
 
 ## 3. Accounts and Their Roles
