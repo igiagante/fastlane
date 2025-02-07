@@ -5,23 +5,65 @@ import { useEffect, useState } from "react";
 import PaymentSuccess from "./payment-success";
 import { OrderDetails } from "../types/paypal";
 import PayPalButtonsWrapper from "./paypal-buttons-wrapper";
+import ErrorBoundary from "./error-boundary";
+import ErrorMessage from "./error-message";
+import { PAYMENT_ERROR_CODES, PaymentError } from "../utils/errors";
 
-const PayPalFastlane = () => {
+type PayPalFastlaneProps = {
+  onClose?: () => void;
+};
+
+const PayPalFastlane = ({ onClose }: PayPalFastlaneProps) => {
   const [email, setEmail] = useState("");
   const [clientToken, setClientToken] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [tokenError, setTokenError] = useState<PaymentError | null>(null);
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
 
   useEffect(() => {
     const getToken = async () => {
-      const response = await fetch("/api/get-paypal-token");
-      const data = await response.json();
-      if (data.accessToken) {
+      try {
+        const response = await fetch("/api/get-paypal-token");
+        if (!response.ok) {
+          throw new PaymentError(
+            "Failed to initialize payment",
+            PAYMENT_ERROR_CODES.TOKEN_ERROR,
+            `Status: ${response.status}`
+          );
+        }
+        const data = await response.json();
+        if (!data.accessToken) {
+          throw new PaymentError(
+            "Invalid token response",
+            PAYMENT_ERROR_CODES.TOKEN_ERROR
+          );
+        }
         setClientToken(data.accessToken);
+      } catch (err) {
+        setTokenError(
+          err instanceof PaymentError
+            ? err
+            : new PaymentError(
+                "Failed to initialize payment",
+                PAYMENT_ERROR_CODES.TOKEN_ERROR,
+                err instanceof Error ? err.message : String(err)
+              )
+        );
       }
     };
     getToken();
   }, []);
+
+  if (tokenError) {
+    return (
+      <ErrorMessage
+        title="Initialization Error"
+        message={tokenError.message}
+        details={tokenError.details}
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
 
   if (paymentSuccess && orderDetails) {
     return (
@@ -56,31 +98,44 @@ const PayPalFastlane = () => {
           placeholder="Enter your email"
         />
       </div>
-
-      <PayPalScriptProvider
-        options={{
-          clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
-          currency: "USD",
-          intent: "capture",
-          clientToken: clientToken,
-          components: "buttons,fastlane,funding-eligibility,card-fields",
-          enableFunding: "card,credit,paylater,venmo",
-          disableFunding: "sepa,bancontact,eps,giropay,ideal,mybank,p24,sofort",
-          dataUserExperienceFlow: "NATIVE_CHECKOUT",
-          dataPageType: "checkout",
-          dataPartnerAttributionId: "FASTLANE",
-          dataPopup: false,
-          dataDisplayType: "drawer",
-          dataUserIdToken: email,
-          dataNamespace: "PayPalSDK",
-        }}
+      <ErrorBoundary
+        fallback={
+          <ErrorMessage
+            title="Payment Error"
+            message="Failed to process payment. Please try again."
+            onRetry={() => window.location.reload()}
+          />
+        }
       >
-        <PayPalButtonsWrapper
-          email={email}
-          setOrderDetails={setOrderDetails}
-          setPaymentSuccess={setPaymentSuccess}
-        />
-      </PayPalScriptProvider>
+        <PayPalScriptProvider
+          options={{
+            clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
+            currency: "USD",
+            intent: "capture",
+            clientToken: clientToken,
+            components: "buttons,fastlane,funding-eligibility,card-fields",
+            enableFunding: "card,credit,paylater,venmo",
+            disableFunding:
+              "sepa,bancontact,eps,giropay,ideal,mybank,p24,sofort",
+            dataUserExperienceFlow: "NATIVE_CHECKOUT",
+            dataPageType: "checkout",
+            dataPartnerAttributionId: "FASTLANE",
+            dataPopup: false,
+            dataDisplayType: "drawer",
+            dataUserIdToken: email,
+            dataNamespace: "PayPalSDK",
+            environment: "sandbox",
+          }}
+        >
+          <PayPalButtonsWrapper
+            email={email}
+            setOrderDetails={setOrderDetails}
+            setPaymentSuccess={setPaymentSuccess}
+            paymentSuccess={paymentSuccess}
+            onClose={onClose}
+          />
+        </PayPalScriptProvider>
+      </ErrorBoundary>
     </div>
   );
 };

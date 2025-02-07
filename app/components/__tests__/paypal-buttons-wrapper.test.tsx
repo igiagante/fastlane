@@ -23,6 +23,7 @@ describe("PayPalButtonsWrapper", () => {
     amount: "100.00",
     setOrderDetails: jest.fn(),
     setPaymentSuccess: jest.fn(),
+    paymentSuccess: false,
   };
 
   beforeEach(() => {

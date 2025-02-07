@@ -1,21 +1,42 @@
-import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
+import {
+  DISPATCH_ACTION,
+  PayPalButtons,
+  ReactPayPalScriptOptions,
+  usePayPalScriptReducer,
+} from "@paypal/react-paypal-js";
 import { OrderDetails } from "../types/paypal";
 import PaypalButtonsSkeleton from "./paypal-buttons-skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type PayPalButtonsWrapperProps = {
   email: string;
   setOrderDetails: (details: OrderDetails) => void;
   setPaymentSuccess: (success: boolean) => void;
+  paymentSuccess: boolean;
+  onClose?: () => void;
 };
 
 const PayPalButtonsWrapper = ({
   email,
   setOrderDetails,
   setPaymentSuccess,
+  paymentSuccess,
+  onClose,
 }: PayPalButtonsWrapperProps) => {
-  const [{ isPending, isRejected }] = usePayPalScriptReducer();
+  const [{ isPending, isRejected }, dispatch] = usePayPalScriptReducer();
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only reset PayPal script when payment is successful and component unmounts
+    return () => {
+      if (paymentSuccess) {
+        dispatch({
+          type: DISPATCH_ACTION.RESET_OPTIONS,
+          value: {} as ReactPayPalScriptOptions,
+        });
+      }
+    };
+  }, [dispatch, paymentSuccess]);
 
   const isValidEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -30,8 +51,11 @@ const PayPalButtonsWrapper = ({
   }
 
   if (isRejected) {
-    window.location.reload();
-    return <PaypalButtonsSkeleton />;
+    return (
+      <div data-testid="error-message">
+        Failed to load PayPal script. Please try again.
+      </div>
+    );
   }
 
   if (isPending) {
@@ -71,6 +95,7 @@ const PayPalButtonsWrapper = ({
           const details = await actions.order.capture();
           setOrderDetails(details as unknown as OrderDetails);
           setPaymentSuccess(true);
+          onClose?.();
         } catch (error) {
           console.error("Capture error:", error);
           // Check if we already have the order details despite the error
@@ -83,6 +108,7 @@ const PayPalButtonsWrapper = ({
           ) {
             // Payment likely succeeded if we have an orderID
             setPaymentSuccess(true);
+            onClose?.();
           } else {
             setError("Failed to process payment");
           }

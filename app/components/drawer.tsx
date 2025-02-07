@@ -31,7 +31,7 @@ export default function PayPalDrawer() {
         </DrawerHeader>
         <div className="py-4">
           {/* Render the PayPalFastlane component inside the drawer */}
-          <PayPalFastlane />
+          <PayPalFastlane onClose={() => setOpen(false)} />
         </div>
         <DrawerFooter>
           <button className="btn" onClick={() => setOpen(false)}>
